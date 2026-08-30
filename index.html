@@ -55,14 +55,13 @@ label{display:block;font-size:13px;font-weight:700;margin:0 0 6px}.field{margin-
     bottom:10px;
     width:18px;
     height:18px;
-    border-radius:50%;
     display:flex;
     align-items:center;
     justify-content:center;
-    color:#cbd5e1;
+    color:#94a3b8;
     font-size:14px;
     cursor:pointer;
-    opacity:.35;
+    opacity:.25;
     z-index:100;
 }
 
@@ -78,6 +77,7 @@ label{display:block;font-size:13px;font-weight:700;margin:0 0 6px}.field{margin-
     padding:5px 9px;
     border-radius:999px;
 }
+
 .login-modal{
     position:fixed;
     inset:0;
@@ -133,6 +133,7 @@ label{display:block;font-size:13px;font-weight:700;margin:0 0 6px}.field{margin-
     min-height:18px;
     margin-bottom:8px;
 }
+ 
 </style>
 </head>
 <body>
@@ -144,9 +145,13 @@ label{display:block;font-size:13px;font-weight:700;margin:0 0 6px}.field{margin-
 </section>
 <div id="adminAccess" class="admin-access" title="Acceso administrativo">Vega&Vega</div>
 <div class="tabs">
-<button class="tab" data-tab="config" style="display:none">⚙️ Configuración</button>
+<button class="tab" data-tab="config" id="configTab" style="display:none">
+    ⚙️ Configuración
+</button>
 <button class="tab" data-tab="results">📝 Resultados</button>
-<button class="tab active" data-tab="table">🏆 Tabla</button>
+<button class="tab active" data-tab="table">
+    🏆 Tabla
+</button>
 <button class="tab" data-tab="stats">📊 Estadísticas</button>
 </div>
 
@@ -329,9 +334,8 @@ $("printConfig")?.addEventListener("click",()=>printSection("config"));
 $("printResults")?.addEventListener("click",()=>printSection("results"));
 $("print2")?.addEventListener("click",()=>printSection("table"));
 $("printStats")?.addEventListener("click",()=>printSection("stats"));
-renderAll();
 // =====================================================
-// AUTENTICACIÓN Y MODO ADMINISTRADOR
+// MODO ADMINISTRADOR
 // =====================================================
 
 let isAdmin = false;
@@ -343,124 +347,207 @@ const loginButton = $("loginButton");
 const loginEmail = $("loginEmail");
 const loginPassword = $("loginPassword");
 const loginError = $("loginError");
+const configTab = $("configTab");
+
 
 function showLogin(){
+
     loginError.textContent = "";
-    loginPassword.value = "";
+
     loginModal.style.display = "flex";
+
     loginEmail.focus();
 }
 
+
 function hideLogin(){
+
     loginModal.style.display = "none";
 }
 
+
 function updateAdminMode(){
-    const configTab = document.querySelector('[data-tab="config"]');
 
     if(isAdmin){
+
+        // Mostrar configuración
         configTab.style.display = "";
-        adminAccess.innerHTML = '<span class="admin-badge">🔐 Admin</span>';
 
+        // Cambiar acceso secreto
+        adminAccess.innerHTML = "🔐";
+
+        // Crear botón cerrar sesión
         if(!document.getElementById("logoutButton")){
-            const logout = document.createElement("button");
-            logout.id = "logoutButton";
-            logout.className = "btn secondary";
-            logout.textContent = "Cerrar sesión";
-            logout.style.marginLeft = "auto";
 
-            logout.onclick = async () => {
+            const logoutButton = document.createElement("button");
+
+            logoutButton.id = "logoutButton";
+            logoutButton.className = "btn secondary";
+            logoutButton.textContent = "Cerrar sesión";
+
+            logoutButton.onclick = async () => {
+
                 await supabaseClient.auth.signOut();
+
             };
 
-            document.querySelector(".tabs").appendChild(logout);
+            document.querySelector(".tabs").appendChild(logoutButton);
         }
+
     }else{
+
+        // Ocultar configuración
         configTab.style.display = "none";
+
+        // Volver al pequeño punto
         adminAccess.textContent = "•";
 
-        const logout = document.getElementById("logoutButton");
-        if(logout) logout.remove();
+        const logoutButton =
+            document.getElementById("logoutButton");
 
-        // Si estaba abierta configuración, cambiar a tabla
-        if(document.getElementById("config").style.display !== "none"){
-            document.querySelector('[data-tab="table"]').click();
+        if(logoutButton){
+            logoutButton.remove();
         }
+
+        // Si estaba viendo configuración,
+        // volver a la tabla
+        const configPanel = document.getElementById("config");
+
+        if(configPanel && configPanel.style.display !== "none"){
+
+            document
+                .querySelector('[data-tab="table"]')
+                .click();
+
+        }
+
     }
+
 }
 
+
 async function checkAdminSession(){
-    const { data } = await supabaseClient.auth.getSession();
+
+    const { data } =
+        await supabaseClient.auth.getSession();
 
     const user = data?.session?.user;
 
-    isAdmin = !!user && user.id === ADMIN_UID;
+    isAdmin =
+        !!user &&
+        user.id === ADMIN_UID;
 
     updateAdminMode();
+
 }
+
 
 adminAccess.onclick = showLogin;
 
+
 closeLogin.onclick = hideLogin;
 
-loginModal.addEventListener("click", e => {
-    if(e.target === loginModal){
+
+loginModal.addEventListener("click", event => {
+
+    if(event.target === loginModal){
+
         hideLogin();
+
     }
+
 });
+
 
 loginButton.onclick = async () => {
 
     loginError.textContent = "";
 
-    const email = loginEmail.value.trim();
-    const password = loginPassword.value;
+    const email =
+        loginEmail.value.trim();
+
+    const password =
+        loginPassword.value;
+
 
     if(!email || !password){
-        loginError.textContent = "Ingresa tu correo y contraseña.";
+
+        loginError.textContent =
+            "Ingresa tu correo y contraseña.";
+
         return;
+
     }
+
 
     loginButton.disabled = true;
+
     loginButton.textContent = "Entrando...";
 
-    const { data, error } = await supabaseClient.auth.signInWithPassword({
-        email,
-        password
-    });
+
+    const { data, error } =
+        await supabaseClient.auth.signInWithPassword({
+
+            email: email,
+            password: password
+
+        });
+
 
     loginButton.disabled = false;
+
     loginButton.textContent = "Entrar";
 
+
     if(error){
-        loginError.textContent = "Correo o contraseña incorrectos.";
+
+        loginError.textContent =
+            "Correo o contraseña incorrectos.";
+
         return;
+
     }
 
+
+    // Verificar que sea TU usuario
     if(data.user.id !== ADMIN_UID){
+
         await supabaseClient.auth.signOut();
-        loginError.textContent = "Este usuario no tiene permisos de administrador.";
+
+        loginError.textContent =
+            "Este usuario no tiene permisos de administrador.";
+
         return;
+
     }
+
 
     isAdmin = true;
 
     hideLogin();
+
     updateAdminMode();
 
-    alert("Modo administrador activado.");
 };
 
-supabaseClient.auth.onAuthStateChange((_event, session) => {
 
-    const user = session?.user;
+supabaseClient.auth.onAuthStateChange(
+    (_event, session) => {
 
-    isAdmin = !!user && user.id === ADMIN_UID;
+        const user = session?.user;
 
-    updateAdminMode();
-});
+        isAdmin =
+            !!user &&
+            user.id === ADMIN_UID;
+
+        updateAdminMode();
+
+    }
+);
 
 checkAdminSession();
+ 
+renderAll();
 </script>
 <div id="loginModal" class="login-modal" style="display:none">
     <div class="login-box">
