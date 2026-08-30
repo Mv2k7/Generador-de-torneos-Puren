@@ -96,6 +96,18 @@ label{display:block;font-size:13px;font-weight:700;margin:0 0 6px}.field{margin-
 </section>
 </main>
 
+<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+
+<script>
+    const SUPABASE_URL = "https://epaojsfeqsumboxvfrve.supabase.co";
+    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_pH9r9G9EFyq25BBlkRfM5w_pN72FTob";
+
+    const supabaseClient = window.supabase.createClient(
+        SUPABASE_URL,
+        SUPABASE_PUBLISHABLE_KEY
+    );
+</script>
+
 <script>
 async function probarSupabase() {
     const { data, error } = await supabaseClient
@@ -111,18 +123,6 @@ async function probarSupabase() {
 }
 
 probarSupabase();
-</script>
-
-<script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
-
-<script>
-    const SUPABASE_URL = "https://epaojsfeqsumboxvfrve.supabase.co";
-    const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_pH9r9G9EFyq25BBlkRfM5w_pN72FTob";
-
-    const supabaseClient = window.supabase.createClient(
-        SUPABASE_URL,
-        SUPABASE_PUBLISHABLE_KEY
-    );
 </script>
 
 <script>
