@@ -332,7 +332,6 @@ $("printConfig")?.addEventListener("click",()=>printSection("config"));
 $("printResults")?.addEventListener("click",()=>printSection("results"));
 $("print2")?.addEventListener("click",()=>printSection("table"));
 $("printStats")?.addEventListener("click",()=>printSection("stats"));
-load();
 async function guardarEquipoEnSupabase(nombre) {
     const { data, error } = await supabaseClient
         .from("equipos")
@@ -353,6 +352,7 @@ async function guardarEquipoEnSupabase(nombre) {
 
     return data;
 }
+load();
 </script>
 </body>
 </html>
