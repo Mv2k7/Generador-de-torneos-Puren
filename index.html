@@ -333,6 +333,26 @@ $("printResults")?.addEventListener("click",()=>printSection("results"));
 $("print2")?.addEventListener("click",()=>printSection("table"));
 $("printStats")?.addEventListener("click",()=>printSection("stats"));
 load();
+async function guardarEquipoEnSupabase(nombre) {
+    const { data, error } = await supabaseClient
+        .from("equipos")
+        .insert({
+            torneo_id: state.tournamentId,
+            nombre: nombre
+        })
+        .select()
+        .single();
+
+    if (error) {
+        console.error("Error guardando equipo:", error);
+        alert("No se pudo guardar el equipo.");
+        return null;
+    }
+
+    console.log("Equipo guardado:", data);
+
+    return data;
+}
 </script>
 </body>
 </html>
