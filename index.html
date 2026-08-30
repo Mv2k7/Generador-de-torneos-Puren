@@ -189,6 +189,43 @@ label{display:block;font-size:13px;font-weight:700;margin:0 0 6px}.field{margin-
 </section>
 </main>
 
+<div id="loginModal" class="login-modal" style="display:none">
+    <div class="login-box">
+        <div class="login-head">
+            <h2>Acceso administrador</h2>
+            <button id="closeLogin" class="login-close">×</button>
+        </div>
+
+        <div class="login-body">
+            <div class="field">
+                <label>Correo</label>
+                <input
+                    type="email"
+                    id="loginEmail"
+                    placeholder="Correo electrónico"
+                    autocomplete="email"
+                >
+            </div>
+
+            <div class="field">
+                <label>Contraseña</label>
+                <input
+                    type="password"
+                    id="loginPassword"
+                    placeholder="Contraseña"
+                    autocomplete="current-password"
+                >
+            </div>
+
+            <div id="loginError" class="login-error"></div>
+
+            <button id="loginButton" class="btn primary login-button">
+                Entrar
+            </button>
+        </div>
+    </div>
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
@@ -334,6 +371,7 @@ $("printConfig")?.addEventListener("click",()=>printSection("config"));
 $("printResults")?.addEventListener("click",()=>printSection("results"));
 $("print2")?.addEventListener("click",()=>printSection("table"));
 $("printStats")?.addEventListener("click",()=>printSection("stats"));
+ 
 // =====================================================
 // MODO ADMINISTRADOR
 // =====================================================
@@ -549,41 +587,5 @@ checkAdminSession();
  
 renderAll();
 </script>
-<div id="loginModal" class="login-modal" style="display:none">
-    <div class="login-box">
-        <div class="login-head">
-            <h2>Acceso administrador</h2>
-            <button id="closeLogin" class="login-close">×</button>
-        </div>
-
-        <div class="login-body">
-            <div class="field">
-                <label>Correo</label>
-                <input
-                    type="email"
-                    id="loginEmail"
-                    placeholder="Correo electrónico"
-                    autocomplete="email"
-                >
-            </div>
-
-            <div class="field">
-                <label>Contraseña</label>
-                <input
-                    type="password"
-                    id="loginPassword"
-                    placeholder="Contraseña"
-                    autocomplete="current-password"
-                >
-            </div>
-
-            <div id="loginError" class="login-error"></div>
-
-            <button id="loginButton" class="btn primary login-button">
-                Entrar
-            </button>
-        </div>
-    </div>
-</div>
 </body>
 </html>
