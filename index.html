@@ -219,48 +219,57 @@ function renderTeams(){
  $("leagueName").value=state.name||"";$("mode").value=state.mode||"league";$("currentTitle").textContent=state.name||"Equipos";$("teamCount").textContent=state.teams.length;
  $("teamList").innerHTML=state.teams.map(t=>`<div class="team"><div class="team-main">${teamHTML(t)}<span>${escape(t.name)}</span></div><button class="btn danger" data-del-team="${t.id}">Eliminar</button></div>`).join("");
  $("teamEmpty").style.display=state.teams.length?"none":"block";
- document.querySelectorAll("[data-del-team]").forEach(b=>b.onclick=async ()=>{
+ document.querySelectorAll("[data-del-team]").forEach(
+  b=>b.onclick=async ()=>{
 
-  const tid = b.dataset.delTeam;
+    const tid = b.dataset.delTeam;
 
-  const equipo = state.teams.find(
-    t => String(t.id) === tid
-  );
+    const equipo = state.teams.find(
+      t => String(t.id) === tid
+    );
 
-  if(!equipo){
-    console.error("No se encontró el equipo:", tid);
-    return;
+    if(!equipo){
+      console.error(
+        "No se encontró el equipo:",
+        tid
+      );
+      return;
+    }
+
+    if(
+      !confirm(
+        `¿Eliminar el equipo "${equipo.name}"?\n\nTambién se eliminarán sus partidos.`
+      )
+    ){
+      return;
+    }
+
+    const eliminado =
+      await eliminarEquipoEnSupabase(equipo.id);
+
+    if(!eliminado){
+      return;
+    }
+
+    state.teams = state.teams.filter(
+      t => String(t.id) !== tid
+    );
+
+    state.matches = state.matches.filter(
+      m =>
+        String(m.home) !== tid &&
+        String(m.away) !== tid
+    );
+
+    save();
+    renderAll();
+
+    console.log(
+      "Equipo eliminado correctamente:",
+      equipo.name
+    );
   }
-
-  if(
-    !confirm(
-      `¿Eliminar el equipo "${equipo.name}"?\n\nTambién se eliminarán sus partidos.`
-    )
-  ){
-    return;
-  }
-
-  const eliminado = await eliminarEquipoEnSupabase(equipo.id);
-
-  if(!eliminado){
-    return;
-  }
-
-  state.teams = state.teams.filter(
-    t => String(t.id) !== tid
-  );
-
-  state.matches = state.matches.filter(
-    m =>
-      String(m.home) !== tid &&
-      String(m.away) !== tid
-  );
-
-  save();
-  renderAll();
-
-  console.log("Equipo eliminado correctamente:", equipo.name);
-});
+);
 }
 function createMatches(){
  if(state.teams.length<2)return;
@@ -305,76 +314,100 @@ function renderMatches(){
      <div><div class="match-team away">${teamHTML(a||{name:""},true)} ${escape(a?.name||"")}</div></div>
    </div>`;
  }).join("");
- document.querySelectorAll("[data-save-match]").forEach(b=>b.onclick=async ()=>{
-  let m=state.matches.find(x=>String(x.id)===b.dataset.saveMatch);
+ document.querySelectorAll("[data-save-match]").forEach(
+  b=>b.onclick=async ()=>{
 
-  let hg=document.querySelector(`[data-h="${m.id}"]`);
-  let ag=document.querySelector(`[data-a="${m.id}"]`);
-
-  if(
-    hg.value==="" ||
-    ag.value==="" ||
-    !Number.isInteger(+hg.value) ||
-    !Number.isInteger(+ag.value) ||
-    +hg.value<0 ||
-    +ag.value<0
-  ){
-    return alert(
-      "Ingresa ambos marcadores como números enteros iguales o mayores que 0."
+    const m = state.matches.find(
+      x => String(x.id) === b.dataset.saveMatch
     );
+
+    if(!m){
+      console.error(
+        "No se encontró el partido:",
+        b.dataset.saveMatch
+      );
+      return;
+    }
+
+    const hg =
+      document.querySelector(`[data-h="${m.id}"]`);
+
+    const ag =
+      document.querySelector(`[data-a="${m.id}"]`);
+
+    if(
+      hg.value === "" ||
+      ag.value === "" ||
+      !Number.isInteger(+hg.value) ||
+      !Number.isInteger(+ag.value) ||
+      +hg.value < 0 ||
+      +ag.value < 0
+    ){
+      return alert(
+        "Ingresa ambos marcadores como números enteros iguales o mayores que 0."
+      );
+    }
+
+    const golesLocal = Math.floor(+hg.value);
+    const golesVisitante = Math.floor(+ag.value);
+
+    const resultadoActualizado =
+      await actualizarResultadoEnSupabase(
+        m.id,
+        golesLocal,
+        golesVisitante
+      );
+
+    if(!resultadoActualizado){
+      return;
+    }
+
+    m.hg = golesLocal;
+    m.ag = golesVisitante;
+    m.played = true;
+
+    save();
+    renderAll();
   }
+);
+ 
+ document.querySelectorAll("[data-clear-match]").forEach(
+  b=>b.onclick=async ()=>{
 
-  const golesLocal = Math.floor(+hg.value);
-  const golesVisitante = Math.floor(+ag.value);
+    const m = state.matches.find(
+      x => String(x.id) === b.dataset.clearMatch
+    );
 
-  const resultadoActualizado = await actualizarResultadoEnSupabase(
-    m.id,
-    golesLocal,
-    golesVisitante
-  );
+    if(!m){
+      console.error(
+        "No se encontró el partido:",
+        b.dataset.clearMatch
+      );
+      return;
+    }
 
-  if(!resultadoActualizado){
-    return;
+    if(
+      m.played &&
+      !confirm("¿Eliminar el resultado de este partido?")
+    ){
+      return;
+    }
+
+    const partidoActualizado =
+      await limpiarResultadoEnSupabase(m.id);
+
+    if(!partidoActualizado){
+      return;
+    }
+
+    m.hg = "";
+    m.ag = "";
+    m.played = false;
+
+    save();
+    renderAll();
   }
-
-  m.hg = golesLocal;
-  m.ag = golesVisitante;
-  m.played = true;
-
-  save();
-  renderAll();
-});
- document.querySelectorAll("[data-clear-match]").forEach(b=>b.onclick=async ()=>{
-  let m=state.matches.find(
-    x=>String(x.id)===b.dataset.clearMatch
-  );
-
-  if(!m){
-    console.error("No se encontró el partido:", b.dataset.clearMatch);
-    return;
-  }
-
-  if(
-    m.played &&
-    !confirm("¿Eliminar el resultado de este partido?")
-  ){
-    return;
-  }
-
-  const partidoActualizado =
-    await limpiarResultadoEnSupabase(m.id);
-
-  if(!partidoActualizado){
-    return;
-  }
-
-  m.hg = "";
-  m.ag = "";
-  m.played = false;
-
-  save();
-  renderAll();
-});
+);
 }
 function calc(){
  return state.teams.map(t=>{
@@ -406,30 +439,86 @@ function renderAll(){
  renderStandings();
  renderStats();
 }
-$("addTeam").onclick=()=>{
- let n=$("teamName").value.trim();
- if(!n)return alert("Escribe el nombre del equipo.");
- if(state.teams.some(t=>t.name.toLowerCase()===n.toLowerCase()))return alert("Ese equipo ya existe.");
- state.teams.push({id:id(),name:n});$("teamName").value="";save();renderAll();
+$("addTeam").onclick=async ()=>{
+  const n = $("teamName").value.trim();
+
+  if(!n){
+    return alert("Escribe el nombre del equipo.");
+  }
+
+  if(
+    state.teams.some(
+      t => t.name.toLowerCase() === n.toLowerCase()
+    )
+  ){
+    return alert("Ese equipo ya existe.");
+  }
+
+  if(!state.tournamentId){
+    return alert("No hay un torneo cargado.");
+  }
+
+  const equipoGuardado = await guardarEquipoEnSupabase(n);
+
+  if(!equipoGuardado){
+    return;
+  }
+
+  state.teams.push({
+    id: equipoGuardado.id,
+    name: equipoGuardado.nombre
+  });
+
+  $("teamName").value = "";
+
+  save();
+  renderAll();
+
+  console.log("Equipo agregado correctamente:", equipoGuardado);
 };
 $("teamName").addEventListener("keydown",e=>{if(e.key==="Enter")$("addTeam").click()});
 $("create").onclick=async ()=>{
-  state.name=$("leagueName").value.trim()||"Torneo sin nombre";
-  state.mode=$("mode").value;
+
+  if(state.teams.length < 2){
+    return alert("Necesitas al menos 2 equipos para crear los partidos.");
+  }
+
+  state.name =
+    $("leagueName").value.trim() || "Torneo sin nombre";
+
+  state.mode = $("mode").value;
 
   createMatches();
 
-  const partidosGuardados = await guardarPartidosEnSupabase();
+  const partidosGuardados =
+    await guardarPartidosEnSupabase();
 
   if(!partidosGuardados){
     return;
   }
 
+  // Reemplazamos los partidos temporales
+  // por los partidos reales devueltos por Supabase.
+  state.matches = partidosGuardados.map(partido => ({
+    id: partido.id,
+    round: partido.jornada,
+    home: partido.equipo_local_id,
+    away: partido.equipo_visitante_id,
+    hg: partido.goles_local ?? "",
+    ag: partido.goles_visitante ?? "",
+    played: partido.estado === "jugado"
+  }));
+
   save();
   renderAll();
 
+  console.log(
+    "Fixture conectado con Supabase:",
+    state.matches
+  );
+
   alert(
-    state.mode==="round2"
+    state.mode === "round2"
       ? "Torneo creado con 2 ruedas: ida y vuelta."
       : "Torneo creado con 1 rueda."
   );
@@ -472,40 +561,41 @@ async function guardarEquipoEnSupabase(nombre) {
 }
 async function guardarPartidosEnSupabase() {
 
-    if (!state.tournamentId) {
-        console.error("No existe un torneo seleccionado.");
-        return false;
-    }
+  if (!state.tournamentId) {
+    console.error("No existe un torneo seleccionado.");
+    alert("No existe un torneo seleccionado.");
+    return null;
+  }
 
-    if (!state.matches || state.matches.length === 0) {
-        console.log("No hay partidos para guardar.");
-        return true;
-    }
+  if (!state.matches || state.matches.length === 0) {
+    console.log("No hay partidos para guardar.");
+    return [];
+  }
 
-    const partidos = state.matches.map(partido => ({
-        torneo_id: state.tournamentId,
-        jornada: partido.round,
-        equipo_local_id: partido.home,
-        equipo_visitante_id: partido.away,
-        goles_local: null,
-        goles_visitante: null,
-        estado: "pendiente"
-    }));
+  const partidos = state.matches.map(partido => ({
+    torneo_id: state.tournamentId,
+    jornada: partido.round,
+    equipo_local_id: partido.home,
+    equipo_visitante_id: partido.away,
+    goles_local: null,
+    goles_visitante: null,
+    estado: "pendiente"
+  }));
 
-    const { data, error } = await supabaseClient
-        .from("partidos")
-        .insert(partidos)
-        .select();
+  const { data, error } = await supabaseClient
+    .from("partidos")
+    .insert(partidos)
+    .select();
 
-    if (error) {
-        console.error("Error guardando partidos:", error);
-        alert("No se pudieron guardar los partidos.");
-        return false;
-    }
+  if (error) {
+    console.error("Error guardando partidos:", error);
+    alert("No se pudieron guardar los partidos: " + error.message);
+    return null;
+  }
 
-    console.log("Partidos guardados en Supabase:", data);
+  console.log("Partidos guardados en Supabase:", data);
 
-    return true;
+  return data;
 }
 async function actualizarResultadoEnSupabase(partidoId, golesLocal, golesVisitante) {
     const { data, error } = await supabaseClient
