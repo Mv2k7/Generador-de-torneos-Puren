@@ -198,7 +198,7 @@ async function load() {
     away: partido.equipo_visitante_id,
     hg: partido.goles_local ?? "",
     ag: partido.goles_visitante ?? "",
-    played: partido.estado === "finalizado"
+    played: partido.estado === "jugado"
   }));
 
   console.log("Datos cargados desde Supabase:", state);
@@ -264,11 +264,45 @@ function renderMatches(){
      <div><div class="match-team away">${teamHTML(a||{name:""},true)} ${escape(a?.name||"")}</div></div>
    </div>`;
  }).join("");
- document.querySelectorAll("[data-save-match]").forEach(b=>b.onclick=()=>{
-   let m=state.matches.find(x=>x.id===b.dataset.saveMatch),hg=document.querySelector(`[data-h="${m.id}"]`),ag=document.querySelector(`[data-a="${m.id}"]`);
-   if(hg.value===""||ag.value===""||!Number.isInteger(+hg.value)||!Number.isInteger(+ag.value)||+hg.value<0||+ag.value<0)return alert("Ingresa ambos marcadores como números enteros iguales o mayores que 0.");
-   m.hg=Math.floor(+hg.value);m.ag=Math.floor(+ag.value);m.played=true;save();renderAll();
- });
+ document.querySelectorAll("[data-save-match]").forEach(b=>b.onclick=async ()=>{
+  let m=state.matches.find(x=>String(x.id)===b.dataset.saveMatch);
+
+  let hg=document.querySelector(`[data-h="${m.id}"]`);
+  let ag=document.querySelector(`[data-a="${m.id}"]`);
+
+  if(
+    hg.value==="" ||
+    ag.value==="" ||
+    !Number.isInteger(+hg.value) ||
+    !Number.isInteger(+ag.value) ||
+    +hg.value<0 ||
+    +ag.value<0
+  ){
+    return alert(
+      "Ingresa ambos marcadores como números enteros iguales o mayores que 0."
+    );
+  }
+
+  const golesLocal = Math.floor(+hg.value);
+  const golesVisitante = Math.floor(+ag.value);
+
+  const resultadoActualizado = await actualizarResultadoEnSupabase(
+    m.id,
+    golesLocal,
+    golesVisitante
+  );
+
+  if(!resultadoActualizado){
+    return;
+  }
+
+  m.hg = golesLocal;
+  m.ag = golesVisitante;
+  m.played = true;
+
+  save();
+  renderAll();
+});
  document.querySelectorAll("[data-clear-match]").forEach(b=>b.onclick=()=>{
    let m=state.matches.find(x=>x.id===b.dataset.clearMatch);
    if(!m)return;
@@ -406,6 +440,27 @@ async function guardarPartidosEnSupabase() {
     console.log("Partidos guardados en Supabase:", data);
 
     return true;
+}
+async function actualizarResultadoEnSupabase(partidoId, golesLocal, golesVisitante) {
+    const { data, error } = await supabaseClient
+        .from("partidos")
+        .update({
+            goles_local: golesLocal,
+            goles_visitante: golesVisitante,
+            estado: "jugado"
+        })
+        .eq("id", partidoId)
+        .select()
+        .single();
+
+    if (error) {
+        console.error("Error actualizando resultado:", error);
+        alert("No se pudo guardar el resultado: " + error.message);
+        return null;
+    }
+
+    console.log("Resultado actualizado en Supabase:", data);
+    return data;
 }
 load();
 </script>
