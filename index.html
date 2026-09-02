@@ -219,7 +219,48 @@ function renderTeams(){
  $("leagueName").value=state.name||"";$("mode").value=state.mode||"league";$("currentTitle").textContent=state.name||"Equipos";$("teamCount").textContent=state.teams.length;
  $("teamList").innerHTML=state.teams.map(t=>`<div class="team"><div class="team-main">${teamHTML(t)}<span>${escape(t.name)}</span></div><button class="btn danger" data-del-team="${t.id}">Eliminar</button></div>`).join("");
  $("teamEmpty").style.display=state.teams.length?"none":"block";
- document.querySelectorAll("[data-del-team]").forEach(b=>b.onclick=()=>{let tid=b.dataset.delTeam;state.teams=state.teams.filter(t=>t.id!==tid);state.matches=state.matches.filter(m=>m.home!==tid&&m.away!==tid);save();renderAll()});
+ document.querySelectorAll("[data-del-team]").forEach(b=>b.onclick=async ()=>{
+
+  const tid = b.dataset.delTeam;
+
+  const equipo = state.teams.find(
+    t => String(t.id) === tid
+  );
+
+  if(!equipo){
+    console.error("No se encontró el equipo:", tid);
+    return;
+  }
+
+  if(
+    !confirm(
+      `¿Eliminar el equipo "${equipo.name}"?\n\nTambién se eliminarán sus partidos.`
+    )
+  ){
+    return;
+  }
+
+  const eliminado = await eliminarEquipoEnSupabase(equipo.id);
+
+  if(!eliminado){
+    return;
+  }
+
+  state.teams = state.teams.filter(
+    t => String(t.id) !== tid
+  );
+
+  state.matches = state.matches.filter(
+    m =>
+      String(m.home) !== tid &&
+      String(m.away) !== tid
+  );
+
+  save();
+  renderAll();
+
+  console.log("Equipo eliminado correctamente:", equipo.name);
+});
 }
 function createMatches(){
  if(state.teams.length<2)return;
@@ -507,6 +548,48 @@ async function limpiarResultadoEnSupabase(partidoId) {
 
   console.log("Resultado limpiado en Supabase:", data);
   return data;
+}
+async function eliminarEquipoEnSupabase(equipoId) {
+
+  // Primero eliminamos los partidos donde el equipo es local
+  const { error: errorLocal } = await supabaseClient
+    .from("partidos")
+    .delete()
+    .eq("equipo_local_id", equipoId);
+
+  if (errorLocal) {
+    console.error("Error eliminando partidos como local:", errorLocal);
+    alert("No se pudieron eliminar los partidos del equipo.");
+    return false;
+  }
+
+  // Luego los partidos donde el equipo es visitante
+  const { error: errorVisitante } = await supabaseClient
+    .from("partidos")
+    .delete()
+    .eq("equipo_visitante_id", equipoId);
+
+  if (errorVisitante) {
+    console.error("Error eliminando partidos como visitante:", errorVisitante);
+    alert("No se pudieron eliminar los partidos del equipo.");
+    return false;
+  }
+
+  // Finalmente eliminamos el equipo
+  const { error: errorEquipo } = await supabaseClient
+    .from("equipos")
+    .delete()
+    .eq("id", equipoId);
+
+  if (errorEquipo) {
+    console.error("Error eliminando equipo:", errorEquipo);
+    alert("No se pudo eliminar el equipo.");
+    return false;
+  }
+
+  console.log("Equipo eliminado de Supabase:", equipoId);
+
+  return true;
 }
 load();
 </script>
