@@ -68,25 +68,149 @@ body.admin-mode .admin-only-block{
 
 /* Botón discreto de acceso */
 
-.admin-access{
-  position:fixed;
-  right:14px;
-  bottom:14px;
-  width:34px;
-  height:34px;
-  border:0;
-  border-radius:50%;
-  background:#111827;
-  color:white;
-  opacity:.22;
-  cursor:pointer;
-  z-index:900;
-  font-size:15px;
-  transition:.2s;
+/* =====================================================
+   PIE DE PÁGINA / VEGA&VEGA
+===================================================== */
+
+.site-footer{
+  margin-top:32px;
+  background:#fff;
+  border-top:1px solid var(--line);
 }
 
-.admin-access:hover{
-  opacity:.85;
+.site-footer-inner{
+  max-width:1250px;
+  margin:auto;
+  padding:18px;
+  display:flex;
+  align-items:center;
+  justify-content:space-between;
+  gap:18px;
+}
+
+.footer-info{
+  display:flex;
+  flex-direction:column;
+  gap:3px;
+}
+
+.footer-info strong{
+  font-size:13px;
+  color:var(--txt);
+}
+
+.footer-info span{
+  font-size:11px;
+  color:var(--muted);
+}
+
+
+/* Vega&Vega también funciona como acceso administrador */
+
+.vega-access{
+  border:1px solid #dce3ed;
+  background:linear-gradient(
+    135deg,
+    #ffffff,
+    #f5f8fc
+  );
+
+  display:inline-flex;
+  align-items:center;
+  gap:9px;
+
+  padding:7px 11px;
+
+  border-radius:12px;
+
+  cursor:pointer;
+
+  opacity:.78;
+
+  box-shadow:
+    0 3px 10px rgba(23,33,47,.06);
+
+  transition:
+    transform .18s ease,
+    box-shadow .18s ease,
+    opacity .18s ease,
+    border-color .18s ease;
+}
+
+
+.vega-access:hover{
+  opacity:1;
+
+  transform:translateY(-2px);
+
+  border-color:#b9c9df;
+
+  box-shadow:
+    0 7px 18px rgba(23,33,47,.11);
+}
+
+
+.vega-symbol{
+  width:36px;
+  height:36px;
+
+  border-radius:10px;
+
+  display:flex;
+  align-items:center;
+  justify-content:center;
+
+  flex:none;
+
+  background:linear-gradient(
+    135deg,
+    #0d4d9e,
+    #1769e0
+  );
+
+  color:#fff;
+
+  font-size:12px;
+  font-weight:900;
+  letter-spacing:-1px;
+}
+
+
+.vega-info{
+  display:flex;
+  flex-direction:column;
+
+  text-align:left;
+
+  line-height:1.15;
+}
+
+
+.vega-info small{
+  color:var(--muted);
+  font-size:9px;
+  font-weight:600;
+}
+
+
+.vega-info strong{
+  color:var(--txt);
+  font-size:13px;
+  font-weight:850;
+}
+
+
+@media(max-width:600px){
+
+  .site-footer-inner{
+    flex-direction:column;
+    align-items:flex-start;
+  }
+
+  .vega-access{
+    align-self:flex-end;
+  }
+
 }
 
 
@@ -256,14 +380,51 @@ body.admin-mode .admin-only-block{
      ACCESO DISCRETO DE ADMINISTRADOR
 ============================================= -->
 
-<button
-  id="adminAccessBtn"
-  class="admin-access"
-  title="Administración"
-  aria-label="Administración"
->
-  Vega&Vega
-</button>
+<footer class="site-footer no-print">
+
+  <div class="site-footer-inner">
+
+    <div class="footer-info">
+
+      <strong>
+        Asociación de Futbol Amateur Purén
+      </strong>
+
+      <span>
+        Torneos, resultados y estadísticas
+      </span>
+
+    </div>
+
+
+    <button
+      id="adminAccessBtn"
+      class="vega-access"
+      title="Acceso"
+      aria-label="Acceso administrador"
+    >
+
+      <span class="vega-symbol">
+        V&V
+      </span>
+
+      <span class="vega-info">
+
+        <small>
+          Sitio desarrollado por
+        </small>
+
+        <strong>
+          Vega&Vega
+        </strong>
+
+      </span>
+
+    </button>
+
+  </div>
+
+</footer>
 
 
 <!-- =============================================
@@ -507,22 +668,14 @@ function aplicarVistaUsuario(){
     );
 
     $("adminAccessBtn").style.display =
-      "block";
+      "";
 
   }
-
-  /*
-    Volvemos a dibujar porque equipos y
-    partidos se representan diferente
-    dependiendo del usuario.
-  */
 
   if(typeof state !== "undefined"){
     renderAll();
   }
 }
-
-
 
 function abrirLoginAdmin(){
 
@@ -1337,6 +1490,11 @@ function renderAll(){
  renderStats();
 }
 $("addTeam").onclick=async ()=>{
+
+  if(!esAdmin){
+    return;
+  }
+
   const n = $("teamName").value.trim();
 
   if(!n){
@@ -1373,8 +1531,13 @@ $("addTeam").onclick=async ()=>{
 
   console.log("Equipo agregado correctamente:", equipoGuardado);
 };
+ 
 $("teamName").addEventListener("keydown",e=>{if(e.key==="Enter")$("addTeam").click()});
 $("create").onclick=async ()=>{
+  
+  if(!esAdmin){
+    return;
+  }
 
   if(state.teams.length < 2){
     return alert("Necesitas al menos 2 equipos para crear los partidos.");
