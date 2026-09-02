@@ -303,12 +303,37 @@ function renderMatches(){
   save();
   renderAll();
 });
- document.querySelectorAll("[data-clear-match]").forEach(b=>b.onclick=()=>{
-   let m=state.matches.find(x=>x.id===b.dataset.clearMatch);
-   if(!m)return;
-   if(m.played && !confirm("¿Eliminar el resultado de este partido?"))return;
-   m.hg="";m.ag="";m.played=false;save();renderAll();
- });
+ document.querySelectorAll("[data-clear-match]").forEach(b=>b.onclick=async ()=>{
+  let m=state.matches.find(
+    x=>String(x.id)===b.dataset.clearMatch
+  );
+
+  if(!m){
+    console.error("No se encontró el partido:", b.dataset.clearMatch);
+    return;
+  }
+
+  if(
+    m.played &&
+    !confirm("¿Eliminar el resultado de este partido?")
+  ){
+    return;
+  }
+
+  const partidoActualizado =
+    await limpiarResultadoEnSupabase(m.id);
+
+  if(!partidoActualizado){
+    return;
+  }
+
+  m.hg = "";
+  m.ag = "";
+  m.played = false;
+
+  save();
+  renderAll();
+});
 }
 function calc(){
  return state.teams.map(t=>{
@@ -461,6 +486,27 @@ async function actualizarResultadoEnSupabase(partidoId, golesLocal, golesVisitan
 
     console.log("Resultado actualizado en Supabase:", data);
     return data;
+}
+async function limpiarResultadoEnSupabase(partidoId) {
+  const { data, error } = await supabaseClient
+    .from("partidos")
+    .update({
+      goles_local: null,
+      goles_visitante: null,
+      estado: "pendiente"
+    })
+    .eq("id", partidoId)
+    .select()
+    .single();
+
+  if (error) {
+    console.error("Error limpiando resultado:", error);
+    alert("No se pudo limpiar el resultado: " + error.message);
+    return null;
+  }
+
+  console.log("Resultado limpiado en Supabase:", data);
+  return data;
 }
 load();
 </script>
