@@ -344,7 +344,7 @@ body.admin-mode .admin-only-block{
   style="display:none"
 >
 <div class="grid">
-<div class="card"><div class="head"><h2>Nuevo torneo</h2><div class="print-actions no-print"><button class="btn primary" id="printConfig">🖨️ Imprimir configuración</button></div></div><div class="body">
+<div class="card"><div class="head"><h2>Configuración del torneo</h2><div class="print-actions no-print"><button class="btn primary" id="printConfig">🖨️ Imprimir configuración</button></div></div><div class="body">
 <div class="field"><label>Nombre del torneo</label><input id="leagueName" placeholder="Ej.: Campeonato Senior 2026"></div>
 <div class="field"><label>Modalidad</label><select id="mode"><option value="round1">Liga a una rueda</option><option value="round2">Liga a dos ruedas (ida y vuelta)</option></select></div>
 <div class="field"><label>Nombre del equipo</label><input id="teamName" placeholder="Ej.: Ferroviario"></div>
@@ -356,7 +356,7 @@ body.admin-mode .admin-only-block{
 </section>
 
 <section id="results" class="panel">
-<div class="card"><div class="head"><h2>Registrar resultados</h2><div class="print-actions no-print"><span class="badge">Solo números</span><button class="btn primary" id="printResults">🖨️ Imprimir resultados</button></div></div><div class="body">
+<div class="card"><div class="head"><h2>Partidos y resultados</h2><div class="print-actions no-print"><span class="badge">Solo números</span><button class="btn primary" id="printResults">🖨️ Imprimir resultados</button></div></div><div class="body">
 <div class="notice" id="roundInfo">Ingresa los goles de local y visita. Usa <b>Guardar resultado</b> para registrar el partido. <b>Limpiar</b> deja el partido pendiente.</div>
 <div id="matches"></div><div class="empty" id="matchEmpty">Primero crea un torneo con al menos 2 equipos.</div>
 </div></div>
@@ -594,7 +594,18 @@ async function load() {
 }
  
 const $=id=>document.getElementById(id);
-function escape(s){return String(s||"").replace(/[&<>"']/g,c=>({"&":"&amp;","<":"&lt;",">":"&gt;",'"':"&quot;","'":"&#039;"}[c]))}
+function escape(s){
+  return String(s ?? "").replace(
+    /[&<>"']/g,
+    c=>({
+      "&":"&amp;",
+      "<":"&lt;",
+      ">":"&gt;",
+      '"':"&quot;",
+      "'":"&#039;"
+    }[c])
+  );
+}
 function logoFor(name){return LOGOS[name]||""}
 function teamHTML(t,small=false){
   const src=logoFor(t.name);
@@ -1543,169 +1554,6 @@ $("addTeam").onclick=async ()=>{
 $("teamName").addEventListener("keydown",e=>{if(e.key==="Enter")$("addTeam").click()});
 $("create").onclick=async ()=>{
 
-  if(!esAdmin){
-    return;
-  }
-
-
-  if(state.teams.length < 2){
-
-    return alert(
-      "Necesitas al menos 2 equipos para crear los partidos."
-    );
-
-  }
-
-
-  const nuevoNombre =
-    $("leagueName").value.trim()
-    || "Torneo sin nombre";
-
-
-  const nuevaModalidad =
-    $("mode").value;
-
-
-  /*
-    Si ya hay partidos, regenerar el fixture
-    significa perder también los resultados.
-  */
-
-  if(state.matches.length > 0){
-
-    const continuar = confirm(
-      "Este torneo ya tiene un fixture.\n\n" +
-      "Si continúas se eliminarán los partidos " +
-      "y resultados actuales y se generará un fixture nuevo.\n\n" +
-      "¿Deseas continuar?"
-    );
-
-
-    if(!continuar){
-      return;
-    }
-
-  }
-
-
-  /*
-    Guardamos primero los datos del torneo.
-  */
-
-  const torneoActualizado =
-    await actualizarTorneoEnSupabase(
-      nuevoNombre,
-      nuevaModalidad
-    );
-
-
-  if(!torneoActualizado){
-    return;
-  }
-
-
-  /*
-    Si había fixture anterior, lo eliminamos.
-  */
-
-  if(state.matches.length > 0){
-
-    const fixtureEliminado =
-      await eliminarFixtureEnSupabase();
-
-
-    if(!fixtureEliminado){
-      return;
-    }
-
-  }
-
-
-  /*
-    Actualizamos nuestro estado.
-  */
-
-  state.name =
-    torneoActualizado.nombre;
-
-  state.mode =
-    torneoActualizado.modalidad;
-
-
-  /*
-    Generamos los partidos nuevos.
-  */
-
-  createMatches();
-
-
-  /*
-    Los guardamos en Supabase.
-  */
-
-  const partidosGuardados =
-    await guardarPartidosEnSupabase();
-
-
-  if(!partidosGuardados){
-    return;
-  }
-
-
-  /*
-    IMPORTANTE:
-    utilizamos ahora los IDs reales
-    generados por PostgreSQL.
-  */
-
-  state.matches =
-    partidosGuardados.map(
-      partido => ({
-
-        id:
-          partido.id,
-
-        round:
-          partido.jornada,
-
-        home:
-          partido.equipo_local_id,
-
-        away:
-          partido.equipo_visitante_id,
-
-        hg:
-          partido.goles_local ?? "",
-
-        ag:
-          partido.goles_visitante ?? "",
-
-        played:
-          partido.estado === "jugado"
-
-      })
-    );
-
-
-  renderAll();
-
-
-  console.log(
-    "Torneo y fixture actualizados:",
-    state
-  );
-
-
-  alert(
-    state.mode === "round2"
-
-      ? "Torneo actualizado con 2 ruedas: ida y vuelta."
-
-      : "Torneo actualizado con 1 rueda."
-  );
-
-};
-  
   if(!esAdmin){
     return;
   }
