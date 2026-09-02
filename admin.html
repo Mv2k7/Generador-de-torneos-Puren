@@ -34,7 +34,7 @@
         <p>Has iniciado sesión correctamente.</p>
         <h2>⚽ Equipos</h2>
         <input
-            typer="text"
+            type="text"
             id="nombreEquipo"
             placeholder="Nombre del equipo"
             >
@@ -56,16 +56,14 @@
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
     <script>
-
         const SUPABASE_URL = "https://epaojsfeqsumboxvfrve.supabase.co";
-
         const SUPABASE_PUBLISHABLE_KEY = "sb_publishable_pH9r9G9EFyq25BBlkRfM5w_pN72FTob";
-
         const supabaseClient = window.supabase.createClient(
             SUPABASE_URL,
             SUPABASE_PUBLISHABLE_KEY
         );
 
+         let torneoActualId = null;
 
         // LOGIN
         document.getElementById("loginBtn").addEventListener("click", async () => {
@@ -89,7 +87,7 @@
 
             console.log("Usuario autenticado:", data.user);
 
-            comprobarAdministrador();
+            await comprobarAdministrador();
         });
 
 
@@ -115,40 +113,76 @@
 
             document.getElementById("login").style.display = "none";
             document.getElementById("adminPanel").style.display = "block";
+            const { data: torneos, error } = await supabaseClient
+                .from("torneos")
+                .select("*")
+                .order("id", { ascending: false })
+                .limit(1);
+            
+            if (error) {
+                console.error("Error cargando torneo:", error);
+                document.getElementById("loginMessage").textContent =
+                    "❌ No se pudo cargar el torneo.";
+                return;
+            }
+            
+            if (!torneos || torneos.length === 0) {
+                document.getElementById("loginMessage").textContent =
+                    "❌ No existe ningún torneo.";
+                return;
+            }
+            
+            const torneoActual = torneos[0];
+            torneoActualId = torneoActual.id;
+            console.log("Torneo administrativo:", torneoActual);
 
             console.log("👑 Administrador autenticado.");
         }
-
-
-        // PRUEBA INSERT
-        document.getElementById("testBtn").addEventListener("click", async () => {
-
+        // AGREGAR EQUIPO
+        document.getElementById("agregarEquipoBtn").addEventListener("click", async () => {
+        
+            const nombre = document.getElementById("nombreEquipo").value.trim();
+        
+            if (!nombre) {
+                document.getElementById("adminMessage").textContent =
+                    "❌ Escribe el nombre del equipo.";
+                return;
+            }
+        
+            if (!torneoActualId) {
+                document.getElementById("adminMessage").textContent =
+                    "❌ No se ha cargado el torneo.";
+                return;
+            }
+        
             const { data, error } = await supabaseClient
                 .from("equipos")
                 .insert({
-                    torneo_id: 4,
-                    nombre: "Equipo Prueba Admin"
+                    torneo_id: torneoActualId,
+                    nombre: nombre
                 })
                 .select()
                 .single();
-
+        
             if (error) {
-
-                console.error("Error:", error);
-
+                console.error("Error guardando equipo:", error);
+        
                 document.getElementById("adminMessage").textContent =
                     "❌ Error: " + error.message;
-
+        
                 return;
             }
-
+        
             console.log("Equipo creado:", data);
-
+        
             document.getElementById("adminMessage").textContent =
                 "✅ Equipo creado correctamente.";
+        
+            document.getElementById("nombreEquipo").value = "";
+        
+            cargarEquipos();
         });
-
-
+        
         // CERRAR SESIÓN
         document.getElementById("logoutBtn").addEventListener("click", async () => {
 
