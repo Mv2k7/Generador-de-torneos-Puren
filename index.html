@@ -313,8 +313,26 @@ $("addTeam").onclick=()=>{
  state.teams.push({id:id(),name:n});$("teamName").value="";save();renderAll();
 };
 $("teamName").addEventListener("keydown",e=>{if(e.key==="Enter")$("addTeam").click()});
-$("create").onclick=()=>{
- state.name=$("leagueName").value.trim()||"Torneo sin nombre";state.mode=$("mode").value;createMatches();save();renderAll();alert(state.mode==="round2" ? "Torneo creado con 2 ruedas: ida y vuelta." : "Torneo creado con 1 rueda.");
+$("create").onclick=async ()=>{
+  state.name=$("leagueName").value.trim()||"Torneo sin nombre";
+  state.mode=$("mode").value;
+
+  createMatches();
+
+  const partidosGuardados = await guardarPartidosEnSupabase();
+
+  if(!partidosGuardados){
+    return;
+  }
+
+  save();
+  renderAll();
+
+  alert(
+    state.mode==="round2"
+      ? "Torneo creado con 2 ruedas: ida y vuelta."
+      : "Torneo creado con 1 rueda."
+  );
 };
 document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
  document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));t.classList.add("active");
@@ -344,13 +362,50 @@ async function guardarEquipoEnSupabase(nombre) {
 
     if (error) {
         console.error("Error guardando equipo:", error);
-        alert("No se pudo guardar el equipo.");
+        alert("No se pudo  el equipo.");
         return null;
     }
 
     console.log("Equipo guardado:", data);
 
     return data;
+}
+async function guardarPartidosEnSupabase() {
+
+    if (!state.tournamentId) {
+        console.error("No existe un torneo seleccionado.");
+        return false;
+    }
+
+    if (!state.matches || state.matches.length === 0) {
+        console.log("No hay partidos para guardar.");
+        return true;
+    }
+
+    const partidos = state.matches.map(partido => ({
+        torneo_id: state.tournamentId,
+        jornada: partido.round,
+        equipo_local_id: partido.home,
+        equipo_visitante_id: partido.away,
+        goles_local: null,
+        goles_visitante: null,
+        estado: "pendiente"
+    }));
+
+    const { data, error } = await supabaseClient
+        .from("partidos")
+        .insert(partidos)
+        .select();
+
+    if (error) {
+        console.error("Error guardando partidos:", error);
+        alert("No se pudieron guardar los partidos.");
+        return false;
+    }
+
+    console.log("Partidos guardados en Supabase:", data);
+
+    return true;
 }
 load();
 </script>
