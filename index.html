@@ -49,6 +49,133 @@ label{display:block;font-size:13px;font-weight:700;margin:0 0 6px}.field{margin-
 }
 
 @media(max-width:850px){.grid{grid-template-columns:1fr}.cards{grid-template-columns:repeat(2,1fr)}}@media(max-width:520px){header{padding:12px}.hero{padding:22px}.cards{grid-template-columns:1fr 1fr}}
+/* =====================================================
+   MODO ADMINISTRADOR
+===================================================== */
+
+.admin-only{
+  display:none !important;
+}
+
+body.admin-mode .admin-only{
+  display:flex !important;
+}
+
+body.admin-mode .admin-only-block{
+  display:block !important;
+}
+
+
+/* Botón discreto de acceso */
+
+.admin-access{
+  position:fixed;
+  right:14px;
+  bottom:14px;
+  width:34px;
+  height:34px;
+  border:0;
+  border-radius:50%;
+  background:#111827;
+  color:white;
+  opacity:.22;
+  cursor:pointer;
+  z-index:900;
+  font-size:15px;
+  transition:.2s;
+}
+
+.admin-access:hover{
+  opacity:.85;
+}
+
+
+/* Modal login */
+
+.admin-modal{
+  position:fixed;
+  inset:0;
+  background:rgba(0,0,0,.55);
+  display:none;
+  align-items:center;
+  justify-content:center;
+  z-index:1000;
+  padding:20px;
+}
+
+.admin-modal.show{
+  display:flex;
+}
+
+.admin-login-box{
+  background:white;
+  width:min(400px,100%);
+  border-radius:16px;
+  padding:24px;
+  box-shadow:0 20px 50px rgba(0,0,0,.25);
+}
+
+.admin-login-box h2{
+  margin-top:0;
+}
+
+.admin-login-box input{
+  width:100%;
+  box-sizing:border-box;
+  margin:6px 0;
+}
+
+.admin-login-actions{
+  display:flex;
+  gap:8px;
+  margin-top:12px;
+}
+
+.admin-login-actions button{
+  flex:1;
+}
+
+#adminLoginMessage{
+  margin-top:10px;
+  font-size:14px;
+}
+
+
+/* Indicador cuando estás administrando */
+
+.admin-status{
+  position:fixed;
+  top:12px;
+  right:12px;
+  z-index:850;
+  background:#111827;
+  color:white;
+  border-radius:10px;
+  padding:8px 10px;
+  align-items:center;
+  gap:8px;
+  box-shadow:0 3px 12px rgba(0,0,0,.18);
+}
+
+.admin-status button{
+  border:0;
+  border-radius:7px;
+  padding:6px 9px;
+  cursor:pointer;
+}
+
+
+/* Resultado para visitante */
+
+.public-score{
+  display:flex;
+  align-items:center;
+  justify-content:center;
+  gap:10px;
+  font-size:22px;
+  font-weight:800;
+  margin:6px 0;
+}
 </style>
 </head>
 <body>
@@ -56,13 +183,42 @@ label{display:block;font-size:13px;font-weight:700;margin:0 0 6px}.field{margin-
 <main>
 <section class="hero"><h1>Generador de torneos y registro</h1><p>Asociación de Futbol Amateur Puren</p></section>
 <div class="tabs">
-<button class="tab active" data-tab="config">⚙️ Configuración</button>
-<button class="tab" data-tab="results">📝 Resultados</button>
-<button class="tab" data-tab="table">🏆 Tabla</button>
-<button class="tab" data-tab="stats">📊 Estadísticas</button>
+
+  <button
+    class="tab admin-only"
+    data-tab="config"
+  >
+    ⚙️ Configuración
+  </button>
+
+  <button
+    class="tab active"
+    data-tab="results"
+  >
+    📝 Resultados
+  </button>
+
+  <button
+    class="tab"
+    data-tab="table"
+  >
+    🏆 Tabla
+  </button>
+
+  <button
+    class="tab"
+    data-tab="stats"
+  >
+    📊 Estadísticas
+  </button>
+
 </div>
 
-<section id="config" class="panel">
+<section
+  id="config"
+  class="panel admin-only-block"
+  style="display:none"
+>
 <div class="grid">
 <div class="card"><div class="head"><h2>Nuevo torneo</h2><div class="print-actions no-print"><button class="btn primary" id="printConfig">🖨️ Imprimir configuración</button></div></div><div class="body">
 <div class="field"><label>Nombre del torneo</label><input id="leagueName" placeholder="Ej.: Campeonato Senior 2026"></div>
@@ -75,7 +231,7 @@ label{display:block;font-size:13px;font-weight:700;margin:0 0 6px}.field{margin-
 </div>
 </section>
 
-<section id="results" class="panel" style="display:none">
+<section id="results" class="panel">
 <div class="card"><div class="head"><h2>Registrar resultados</h2><div class="print-actions no-print"><span class="badge">Solo números</span><button class="btn primary" id="printResults">🖨️ Imprimir resultados</button></div></div><div class="body">
 <div class="notice" id="roundInfo">Ingresa los goles de local y visita. Usa <b>Guardar resultado</b> para registrar el partido. <b>Limpiar</b> deja el partido pendiente.</div>
 <div id="matches"></div><div class="empty" id="matchEmpty">Primero crea un torneo con al menos 2 equipos.</div>
@@ -96,6 +252,89 @@ label{display:block;font-size:13px;font-weight:700;margin:0 0 6px}.field{margin-
 </section>
 </main>
 
+<!-- =============================================
+     ACCESO DISCRETO DE ADMINISTRADOR
+============================================= -->
+
+<button
+  id="adminAccessBtn"
+  class="admin-access"
+  title="Administración"
+  aria-label="Administración"
+>
+  Vega&Vega
+</button>
+
+
+<!-- =============================================
+     LOGIN ADMINISTRADOR
+============================================= -->
+
+<div
+  id="adminLoginModal"
+  class="admin-modal"
+>
+
+  <div class="admin-login-box">
+
+    <h2>Acceso administrador</h2>
+
+    <input
+      id="adminEmail"
+      type="email"
+      placeholder="Correo"
+      autocomplete="username"
+    >
+
+    <input
+      id="adminPassword"
+      type="password"
+      placeholder="Contraseña"
+      autocomplete="current-password"
+    >
+
+    <div class="admin-login-actions">
+
+      <button
+        id="adminLoginBtn"
+        class="btn primary"
+      >
+        Iniciar sesión
+      </button>
+
+      <button
+        id="adminCancelBtn"
+        class="btn secondary"
+      >
+        Cancelar
+      </button>
+
+    </div>
+
+    <div id="adminLoginMessage"></div>
+
+  </div>
+
+</div>
+
+
+<!-- =============================================
+     INDICADOR ADMIN
+============================================= -->
+
+<div
+  id="adminStatus"
+  class="admin-status admin-only"
+>
+
+  <span>👑 Administrador</span>
+
+  <button id="adminLogoutBtn">
+    Cerrar sesión
+  </button>
+
+</div>
+
 <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
 
 <script>
@@ -106,6 +345,11 @@ label{display:block;font-size:13px;font-weight:700;margin:0 0 6px}.field{margin-
         SUPABASE_URL,
         SUPABASE_PUBLISHABLE_KEY
     );
+const ADMIN_UIDS = [
+  "e1be2be9-b96f-459e-9040-78d51455d3a9"
+];
+
+let esAdmin = false;
 </script>
 
 <script>
@@ -215,61 +459,383 @@ function teamHTML(t,small=false){
   const src=logoFor(t.name);
   return src?`<img class="${small?'team-logo-small':'logo-box'}" src="${src}" alt="">`:`<span class="${small?'team-logo-small':'logo-box'} style="display:flex;align-items:center;justify-content:center">⚽</span>`;
 }
-function renderTeams(){
- $("leagueName").value=state.name||"";$("mode").value=state.mode||"league";$("currentTitle").textContent=state.name||"Equipos";$("teamCount").textContent=state.teams.length;
- $("teamList").innerHTML=state.teams.map(t=>`<div class="team"><div class="team-main">${teamHTML(t)}<span>${escape(t.name)}</span></div><button class="btn danger" data-del-team="${t.id}">Eliminar</button></div>`).join("");
- $("teamEmpty").style.display=state.teams.length?"none":"block";
- document.querySelectorAll("[data-del-team]").forEach(
-  b=>b.onclick=async ()=>{
+/* =====================================================
+   AUTENTICACIÓN / VISTAS
+===================================================== */
 
-    const tid = b.dataset.delTeam;
+async function comprobarSesionAdmin(){
 
-    const equipo = state.teams.find(
-      t => String(t.id) === tid
-    );
+  const {
+    data: { user },
+    error
+  } = await supabaseClient.auth.getUser();
 
-    if(!equipo){
-      console.error(
-        "No se encontró el equipo:",
-        tid
-      );
-      return;
-    }
 
-    if(
-      !confirm(
-        `¿Eliminar el equipo "${equipo.name}"?\n\nTambién se eliminarán sus partidos.`
-      )
-    ){
-      return;
-    }
-
-    const eliminado =
-      await eliminarEquipoEnSupabase(equipo.id);
-
-    if(!eliminado){
-      return;
-    }
-
-    state.teams = state.teams.filter(
-      t => String(t.id) !== tid
-    );
-
-    state.matches = state.matches.filter(
-      m =>
-        String(m.home) !== tid &&
-        String(m.away) !== tid
-    );
-
-    save();
-    renderAll();
-
-    console.log(
-      "Equipo eliminado correctamente:",
-      equipo.name
+  if(error){
+    console.error(
+      "Error comprobando sesión:",
+      error
     );
   }
-);
+
+
+  esAdmin =
+    !!user &&
+    ADMIN_UIDS.includes(user.id);
+
+
+  aplicarVistaUsuario();
+}
+
+
+
+function aplicarVistaUsuario(){
+
+  if(esAdmin){
+
+    document.body.classList.add(
+      "admin-mode"
+    );
+
+    $("adminAccessBtn").style.display =
+      "none";
+
+  }else{
+
+    document.body.classList.remove(
+      "admin-mode"
+    );
+
+    $("adminAccessBtn").style.display =
+      "block";
+
+  }
+
+  /*
+    Volvemos a dibujar porque equipos y
+    partidos se representan diferente
+    dependiendo del usuario.
+  */
+
+  if(typeof state !== "undefined"){
+    renderAll();
+  }
+}
+
+
+
+function abrirLoginAdmin(){
+
+  $("adminLoginModal")
+    .classList.add("show");
+
+  $("adminLoginMessage")
+    .textContent = "";
+
+  setTimeout(()=>{
+    $("adminEmail").focus();
+  },50);
+}
+
+
+
+function cerrarLoginAdmin(){
+
+  $("adminLoginModal")
+    .classList.remove("show");
+
+  $("adminPassword").value = "";
+
+  $("adminLoginMessage")
+    .textContent = "";
+}
+
+
+
+async function iniciarSesionAdmin(){
+
+  const email =
+    $("adminEmail").value.trim();
+
+  const password =
+    $("adminPassword").value;
+
+
+  if(!email || !password){
+
+    $("adminLoginMessage")
+      .textContent =
+      "❌ Ingresa correo y contraseña.";
+
+    return;
+  }
+
+
+  $("adminLoginBtn").disabled = true;
+
+  $("adminLoginMessage")
+    .textContent =
+    "Comprobando...";
+
+
+  const {
+    data,
+    error
+  } =
+    await supabaseClient.auth
+      .signInWithPassword({
+        email,
+        password
+      });
+
+
+  $("adminLoginBtn").disabled = false;
+
+
+  if(error){
+
+    console.error(
+      "Error iniciando sesión:",
+      error
+    );
+
+    $("adminLoginMessage")
+      .textContent =
+      "❌ Correo o contraseña incorrectos.";
+
+    return;
+  }
+
+
+  if(
+    !data.user ||
+    !ADMIN_UIDS.includes(data.user.id)
+  ){
+
+    await supabaseClient.auth.signOut();
+
+    $("adminLoginMessage")
+      .textContent =
+      "❌ No tienes permisos de administrador.";
+
+    return;
+  }
+
+
+  esAdmin = true;
+
+  cerrarLoginAdmin();
+
+  aplicarVistaUsuario();
+
+  activarTab("config");
+
+  console.log(
+    "👑 Modo administrador activado."
+  );
+}
+
+
+
+async function cerrarSesionAdmin(){
+
+  await supabaseClient.auth.signOut();
+
+  esAdmin = false;
+
+  aplicarVistaUsuario();
+
+  activarTab("results");
+
+  console.log(
+    "Sesión de administrador cerrada."
+  );
+}
+$("adminAccessBtn")
+  .addEventListener(
+    "click",
+    abrirLoginAdmin
+  );
+
+
+$("adminCancelBtn")
+  .addEventListener(
+    "click",
+    cerrarLoginAdmin
+  );
+
+
+$("adminLoginBtn")
+  .addEventListener(
+    "click",
+    iniciarSesionAdmin
+  );
+
+
+$("adminLogoutBtn")
+  .addEventListener(
+    "click",
+    cerrarSesionAdmin
+  );
+
+
+$("adminPassword")
+  .addEventListener(
+    "keydown",
+    e => {
+
+      if(e.key === "Enter"){
+        iniciarSesionAdmin();
+      }
+
+    }
+  );
+
+
+$("adminLoginModal")
+  .addEventListener(
+    "click",
+    e => {
+
+      if(
+        e.target ===
+        $("adminLoginModal")
+      ){
+        cerrarLoginAdmin();
+      }
+
+    }
+  );
+function renderTeams(){
+
+  $("leagueName").value =
+    state.name || "";
+
+  $("mode").value =
+    state.mode || "round1";
+
+  $("currentTitle").textContent =
+    state.name || "Equipos";
+
+  $("teamCount").textContent =
+    state.teams.length;
+
+
+  $("teamList").innerHTML =
+    state.teams.map(t => `
+
+      <div class="team">
+
+        <div class="team-main">
+
+          ${teamHTML(t)}
+
+          <span>
+            ${escape(t.name)}
+          </span>
+
+        </div>
+
+        ${
+          esAdmin
+          ? `
+            <button
+              class="btn danger"
+              data-del-team="${t.id}"
+            >
+              Eliminar
+            </button>
+          `
+          : ""
+        }
+
+      </div>
+
+    `).join("");
+
+
+  $("teamEmpty").style.display =
+    state.teams.length
+      ? "none"
+      : "block";
+
+
+  /*
+     Solo un administrador recibe
+     handlers de eliminación.
+  */
+
+  if(esAdmin){
+
+    document
+      .querySelectorAll(
+        "[data-del-team]"
+      )
+      .forEach(b => {
+
+        b.onclick =
+          async () => {
+
+            const tid =
+              b.dataset.delTeam;
+
+            const equipo =
+              state.teams.find(
+                t =>
+                  String(t.id) === tid
+              );
+
+
+            if(!equipo){
+              return;
+            }
+
+
+            if(
+              !confirm(
+                `¿Eliminar el equipo "${equipo.name}"?\n\nTambién se eliminarán sus partidos.`
+              )
+            ){
+              return;
+            }
+
+
+            const eliminado =
+              await eliminarEquipoEnSupabase(
+                equipo.id
+              );
+
+
+            if(!eliminado){
+              return;
+            }
+
+
+            state.teams =
+              state.teams.filter(
+                t =>
+                  String(t.id) !== tid
+              );
+
+
+            state.matches =
+              state.matches.filter(
+                m =>
+                  String(m.home) !== tid
+                  &&
+                  String(m.away) !== tid
+              );
+
+
+            save();
+
+            renderAll();
+
+          };
+
+      });
+
+  }
 }
 function createMatches(){
  if(state.teams.length<2)return;
@@ -285,129 +851,460 @@ function createMatches(){
  }
 }
 function renderMatches(){
- const box=$("matches");
- const info=$("roundInfo");
- if(info){
-   info.innerHTML=state.mode==="round2"
-    ? `Formato <b>2 ruedas (ida y vuelta)</b>: ${state.matches.length} partidos programados. Cada cruce se juega dos veces, alternando localía.`
-    : `Formato <b>1 rueda</b>: ${state.matches.length} partidos programados.`;
- }
- if(state.teams.length<2){box.innerHTML="";$("matchEmpty").style.display="block";return}
- $("matchEmpty").style.display="none";
- box.innerHTML=state.matches.map(m=>{
-   let h=state.teams.find(t=>t.id===m.home),a=state.teams.find(t=>t.id===m.away);
-   const rueda=state.mode==="round2" ? `<span class="badge">Rueda ${m.round===2?"2 · Vuelta":"1 · Ida"}</span>` : `<span class="badge">Rueda única</span>`;
-   return `<div class="match">
-     <div class="home"><div class="match-team">${escape(h?.name||"")} ${teamHTML(h||{name:""},true)}</div></div>
-     <div class="match-center">
-       ${rueda}
-       <div class="score">
-         <input min="0" step="1" inputmode="numeric" pattern="[0-9]*" type="number" value="${m.hg}" data-h="${m.id}" ${m.played?"disabled":""} aria-label="Goles local">
-         <input min="0" step="1" inputmode="numeric" pattern="[0-9]*" type="number" value="${m.ag}" data-a="${m.id}" ${m.played?"disabled":""} aria-label="Goles visita">
-       </div>
-       <span class="badge ${m.played?"ok":""}">${m.played?"✓ Resultado guardado":"Pendiente"}</span>
-       <div class="match-actions">
-         <button class="btn ${m.played?"secondary":"primary"}" data-save-match="${m.id}">${m.played?"Editar marcador":"Guardar resultado"}</button>
-         <button class="btn danger" data-clear-match="${m.id}">Limpiar</button>
-       </div>
-     </div>
-     <div><div class="match-team away">${teamHTML(a||{name:""},true)} ${escape(a?.name||"")}</div></div>
-   </div>`;
- }).join("");
- document.querySelectorAll("[data-save-match]").forEach(
-  b=>b.onclick=async ()=>{
 
-    const m = state.matches.find(
-      x => String(x.id) === b.dataset.saveMatch
-    );
+  const box =
+    $("matches");
 
-    if(!m){
-      console.error(
-        "No se encontró el partido:",
-        b.dataset.saveMatch
-      );
-      return;
+  const info =
+    $("roundInfo");
+
+
+  if(info){
+
+    if(esAdmin){
+
+      info.innerHTML =
+        state.mode === "round2"
+        ? `Formato <b>2 ruedas (ida y vuelta)</b>:
+           ${state.matches.length} partidos programados.
+           Ingresa los resultados y presiona Guardar.`
+        : `Formato <b>1 rueda</b>:
+           ${state.matches.length} partidos programados.
+           Ingresa los resultados y presiona Guardar.`;
+
+    }else{
+
+      info.innerHTML =
+        state.mode === "round2"
+        ? `Formato <b>2 ruedas (ida y vuelta)</b>:
+           ${state.matches.length} partidos programados.`
+        : `Formato <b>1 rueda</b>:
+           ${state.matches.length} partidos programados.`;
+
     }
 
-    const hg =
-      document.querySelector(`[data-h="${m.id}"]`);
-
-    const ag =
-      document.querySelector(`[data-a="${m.id}"]`);
-
-    if(
-      hg.value === "" ||
-      ag.value === "" ||
-      !Number.isInteger(+hg.value) ||
-      !Number.isInteger(+ag.value) ||
-      +hg.value < 0 ||
-      +ag.value < 0
-    ){
-      return alert(
-        "Ingresa ambos marcadores como números enteros iguales o mayores que 0."
-      );
-    }
-
-    const golesLocal = Math.floor(+hg.value);
-    const golesVisitante = Math.floor(+ag.value);
-
-    const resultadoActualizado =
-      await actualizarResultadoEnSupabase(
-        m.id,
-        golesLocal,
-        golesVisitante
-      );
-
-    if(!resultadoActualizado){
-      return;
-    }
-
-    m.hg = golesLocal;
-    m.ag = golesVisitante;
-    m.played = true;
-
-    save();
-    renderAll();
   }
-);
- 
- document.querySelectorAll("[data-clear-match]").forEach(
-  b=>b.onclick=async ()=>{
 
-    const m = state.matches.find(
-      x => String(x.id) === b.dataset.clearMatch
-    );
 
-    if(!m){
-      console.error(
-        "No se encontró el partido:",
-        b.dataset.clearMatch
-      );
-      return;
-    }
+  if(state.teams.length < 2){
 
-    if(
-      m.played &&
-      !confirm("¿Eliminar el resultado de este partido?")
-    ){
-      return;
-    }
+    box.innerHTML = "";
 
-    const partidoActualizado =
-      await limpiarResultadoEnSupabase(m.id);
+    $("matchEmpty")
+      .style.display =
+      "block";
 
-    if(!partidoActualizado){
-      return;
-    }
-
-    m.hg = "";
-    m.ag = "";
-    m.played = false;
-
-    save();
-    renderAll();
+    return;
   }
-);
+
+
+  $("matchEmpty")
+    .style.display =
+    state.matches.length
+      ? "none"
+      : "block";
+
+
+  box.innerHTML =
+    state.matches.map(m => {
+
+      const h =
+        state.teams.find(
+          t => t.id === m.home
+        );
+
+      const a =
+        state.teams.find(
+          t => t.id === m.away
+        );
+
+
+      const rueda =
+        state.mode === "round2"
+        ? `
+          <span class="badge">
+            Rueda ${
+              m.round === 2
+              ? "2 · Vuelta"
+              : "1 · Ida"
+            }
+          </span>
+        `
+        : `
+          <span class="badge">
+            Rueda única
+          </span>
+        `;
+
+
+      /*
+       * ADMIN
+       */
+
+      if(esAdmin){
+
+        return `
+
+          <div class="match">
+
+            <div class="home">
+
+              <div class="match-team">
+
+                ${escape(h?.name || "")}
+
+                ${
+                  teamHTML(
+                    h || {name:""},
+                    true
+                  )
+                }
+
+              </div>
+
+            </div>
+
+
+            <div class="match-center">
+
+              ${rueda}
+
+              <div class="score">
+
+                <input
+                  min="0"
+                  step="1"
+                  type="number"
+                  inputmode="numeric"
+                  value="${m.hg}"
+                  data-h="${m.id}"
+                  aria-label="Goles local"
+                >
+
+                <input
+                  min="0"
+                  step="1"
+                  type="number"
+                  inputmode="numeric"
+                  value="${m.ag}"
+                  data-a="${m.id}"
+                  aria-label="Goles visita"
+                >
+
+              </div>
+
+
+              <span
+                class="badge ${m.played ? "ok" : ""}"
+              >
+
+                ${
+                  m.played
+                  ? "✓ Resultado guardado"
+                  : "Pendiente"
+                }
+
+              </span>
+
+
+              <div class="match-actions">
+
+                <button
+                  class="btn primary"
+                  data-save-match="${m.id}"
+                >
+                  ${
+                    m.played
+                    ? "Actualizar marcador"
+                    : "Guardar resultado"
+                  }
+                </button>
+
+                <button
+                  class="btn danger"
+                  data-clear-match="${m.id}"
+                >
+                  Limpiar
+                </button>
+
+              </div>
+
+            </div>
+
+
+            <div>
+
+              <div class="match-team away">
+
+                ${
+                  teamHTML(
+                    a || {name:""},
+                    true
+                  )
+                }
+
+                ${escape(a?.name || "")}
+
+              </div>
+
+            </div>
+
+          </div>
+
+        `;
+
+      }
+
+
+      /*
+       * VISITANTE
+       */
+
+      const marcadorPublico =
+        m.played
+
+        ? `
+          <div class="public-score">
+            <span>${m.hg}</span>
+            <span>-</span>
+            <span>${m.ag}</span>
+          </div>
+        `
+
+        : `
+          <div class="public-score">
+            <span>-</span>
+            <span>-</span>
+            <span>-</span>
+          </div>
+        `;
+
+
+      return `
+
+        <div class="match">
+
+          <div class="home">
+
+            <div class="match-team">
+
+              ${escape(h?.name || "")}
+
+              ${
+                teamHTML(
+                  h || {name:""},
+                  true
+                )
+              }
+
+            </div>
+
+          </div>
+
+
+          <div class="match-center">
+
+            ${rueda}
+
+            ${marcadorPublico}
+
+            <span
+              class="badge ${m.played ? "ok" : ""}"
+            >
+
+              ${
+                m.played
+                ? "✓ Jugado"
+                : "Pendiente"
+              }
+
+            </span>
+
+          </div>
+
+
+          <div>
+
+            <div class="match-team away">
+
+              ${
+                teamHTML(
+                  a || {name:""},
+                  true
+                )
+              }
+
+              ${escape(a?.name || "")}
+
+            </div>
+
+          </div>
+
+        </div>
+
+      `;
+
+    }).join("");
+
+
+  /*
+   * Solo admin puede registrar resultados.
+   */
+
+  if(esAdmin){
+
+    document
+      .querySelectorAll(
+        "[data-save-match]"
+      )
+      .forEach(b => {
+
+        b.onclick =
+          async () => {
+
+            const m =
+              state.matches.find(
+                x =>
+                  String(x.id) ===
+                  b.dataset.saveMatch
+              );
+
+
+            if(!m){
+              return;
+            }
+
+
+            const hg =
+              document.querySelector(
+                `[data-h="${m.id}"]`
+              );
+
+            const ag =
+              document.querySelector(
+                `[data-a="${m.id}"]`
+              );
+
+
+            if(
+              hg.value === ""
+              ||
+              ag.value === ""
+              ||
+              !Number.isInteger(+hg.value)
+              ||
+              !Number.isInteger(+ag.value)
+              ||
+              +hg.value < 0
+              ||
+              +ag.value < 0
+            ){
+
+              return alert(
+                "Ingresa ambos marcadores como números enteros iguales o mayores que 0."
+              );
+
+            }
+
+
+            const golesLocal =
+              Math.floor(+hg.value);
+
+            const golesVisitante =
+              Math.floor(+ag.value);
+
+
+            const actualizado =
+              await actualizarResultadoEnSupabase(
+                m.id,
+                golesLocal,
+                golesVisitante
+              );
+
+
+            if(!actualizado){
+              return;
+            }
+
+
+            m.hg =
+              golesLocal;
+
+            m.ag =
+              golesVisitante;
+
+            m.played =
+              true;
+
+
+            save();
+
+            renderAll();
+
+          };
+
+      });
+
+
+
+    document
+      .querySelectorAll(
+        "[data-clear-match]"
+      )
+      .forEach(b => {
+
+        b.onclick =
+          async () => {
+
+            const m =
+              state.matches.find(
+                x =>
+                  String(x.id) ===
+                  b.dataset.clearMatch
+              );
+
+
+            if(!m){
+              return;
+            }
+
+
+            if(
+              m.played
+              &&
+              !confirm(
+                "¿Eliminar el resultado de este partido?"
+              )
+            ){
+              return;
+            }
+
+
+            const actualizado =
+              await limpiarResultadoEnSupabase(
+                m.id
+              );
+
+
+            if(!actualizado){
+              return;
+            }
+
+
+            m.hg = "";
+            m.ag = "";
+            m.played = false;
+
+
+            save();
+
+            renderAll();
+
+          };
+
+      });
+
+  }
 }
 function calc(){
  return state.teams.map(t=>{
@@ -523,10 +1420,60 @@ $("create").onclick=async ()=>{
       : "Torneo creado con 1 rueda."
   );
 };
-document.querySelectorAll(".tab").forEach(t=>t.onclick=()=>{
- document.querySelectorAll(".tab").forEach(x=>x.classList.remove("active"));t.classList.add("active");
- document.querySelectorAll(".panel").forEach(p=>p.style.display="none");$(t.dataset.tab).style.display="block";
-});
+function activarTab(nombre){
+
+  /*
+    Un visitante nunca puede abrir Configuración.
+  */
+
+  if(
+    nombre === "config"
+    &&
+    !esAdmin
+  ){
+    nombre = "results";
+  }
+
+
+  document
+    .querySelectorAll(".tab")
+    .forEach(tab => {
+
+      tab.classList.toggle(
+        "active",
+        tab.dataset.tab === nombre
+      );
+
+    });
+
+
+  document
+    .querySelectorAll(".panel")
+    .forEach(panel => {
+
+      panel.style.display =
+        panel.id === nombre
+        ? "block"
+        : "none";
+
+    });
+}
+
+
+
+document
+  .querySelectorAll(".tab")
+  .forEach(tab => {
+
+    tab.onclick = () => {
+
+      activarTab(
+        tab.dataset.tab
+      );
+
+    };
+
+  });
 function printSection(section){
  document.body.classList.remove("print-config","print-results","print-table","print-stats");
  document.body.classList.add("print-"+section);
@@ -681,7 +1628,40 @@ async function eliminarEquipoEnSupabase(equipoId) {
 
   return true;
 }
-load();
+async function iniciarAplicacion(){
+
+  /*
+    Primero sabemos quién está mirando la página.
+  */
+
+  await comprobarSesionAdmin();
+
+
+  /*
+    Luego cargamos Supabase.
+  */
+
+  await load();
+
+
+  /*
+    Vista inicial.
+  */
+
+  if(esAdmin){
+
+    activarTab("config");
+
+  }else{
+
+    activarTab("results");
+
+  }
+
+}
+
+
+iniciarAplicacion();
 </script>
 </body>
 </html>
